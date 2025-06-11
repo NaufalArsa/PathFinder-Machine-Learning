@@ -1,0 +1,23 @@
+#Run Flask API
+python main.py
+
+#Download English Package for Spacy in Env
+python -m spacy download en_core_web_sm
+
+#URL Connect to Flask API
+http://127.0.0.1:5000/process-resume
+
+#Python Version
+python==3.10.18
+
+#Expected Input (Example:JSON)
+{
+    "resume": "Isi Resume"
+}
+
+#Expected Output (Example:JSON)
+{
+        "cv_index": 1,
+        "recommended_job_title": "Python/Data Visualization Developer, Internship",
+        "similarity_score": "67.12%"
+}

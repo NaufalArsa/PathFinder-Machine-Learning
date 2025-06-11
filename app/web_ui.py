@@ -1,60 +1,58 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="Job Recommender + CV Feedback", layout="wide")
+# Untuk membaca file PDF dan DOCX
+from PyPDF2 import PdfReader
+import docx
 
-tab1, tab2 = st.tabs(["📌 Rekomendasi Pekerjaan", "🧠 Feedback CV"])
+# Konfigurasi halaman
+st.set_page_config(page_title="Rekomendasi Pekerjaan dari CV", layout="wide")
 
-# ----- Tab 1: Rekomendasi Pekerjaan -----
-with tab1:
-    st.title("📌 Sistem Rekomendasi Pekerjaan")
+st.title("🧠 Rekomendasi Pekerjaan dari CV Otomatis")
 
-    with st.form("job_form"):
-        col1, col2, col3 = st.columns(3)
+uploaded_file = st.file_uploader("Unggah file CV Anda (.pdf, .docx, .txt):", type=["pdf", "docx", "txt"])
 
-        with col1:
-            ability = st.text_input("Kemampuan (Ability)")
-        with col2:
-            skill = st.text_input("Keahlian (Skill)")
-        with col3:
-            program = st.text_input("Program/Tools")
-
-        submitted = st.form_submit_button("Dapatkan Rekomendasi")
-
-    if submitted:
-        payload = {
-            "ability": [ability],
-            "skill": [skill],
-            "program": [program]
-        }
+if st.button("Dapatkan Rekomendasi Pekerjaan"):
+    if uploaded_file:
+        file_text = ""
 
         try:
-            response = requests.post("http://127.0.0.1:5000/recommend", json=payload)
-            response.raise_for_status()
-            results = response.json()
+            # Ekstrak isi berdasarkan format file
+            if uploaded_file.type == "application/pdf":
+                reader = PdfReader(uploaded_file)
+                file_text = "\n".join(
+                    page.extract_text() for page in reader.pages if page.extract_text()
+                )
 
-            st.success("Top 5 Rekomendasi:")
-            for idx, item in enumerate(results[0]["recommendation"], start=1):
-                st.markdown(f"**{idx}. {item['title']}** - Skor: {item['score']}%")
+            elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                doc = docx.Document(uploaded_file)
+                file_text = "\n".join([para.text for para in doc.paragraphs])
 
-        except requests.exceptions.RequestException as e:
-            st.error(f"Terjadi kesalahan: {e}")
+            elif uploaded_file.type == "text/plain":
+                file_text = uploaded_file.read().decode("utf-8")
 
-# ----- Tab 2: Feedback CV Otomatis -----
-with tab2:
-    st.title("🧠 Evaluasi & Feedback CV Otomatis")
+            # Kirim teks ke endpoint Flask
+            if file_text.strip():
+                with st.spinner("Memproses CV dan mencari rekomendasi..."):
+                    response = requests.post(
+                        "http://127.0.0.1:5000/process-resume",
+                        json={"resume": file_text}
+                    )
+                    response.raise_for_status()
+                    results = response.json()
 
-    cv_text = st.text_area("Masukkan isi CV Anda:", height=300)
+                # Tampilkan hasil rekomendasi
+                if isinstance(results, list) and results:
+                    st.success("Berikut adalah rekomendasi pekerjaan berdasarkan CV Anda:")
+                    for idx, rec in enumerate(results, start=1):
+                        st.markdown(f"**{idx}. {rec['recommended_job_title']}** — Skor: {rec['similarity_score']}")
+                else:
+                    st.warning("Tidak ada rekomendasi ditemukan.")
 
-    if st.button("Dapatkan Feedback CV"):
-        if cv_text.strip():
-            try:
-                response = requests.post("http://127.0.0.1:8000/feedback", json={"cv_text": cv_text})
-                response.raise_for_status()
-                feedback = response.json().get("feedback", "")
-                st.success("Berikut hasil feedback:")
-                st.write(feedback)
-            except requests.exceptions.RequestException as e:
-                st.error(f"Gagal mendapatkan feedback: {e}")
-        else:
-            st.warning("Mohon isi CV terlebih dahulu.")
+            else:
+                st.warning("Isi file CV kosong atau tidak terbaca.")
+
+        except Exception as e:
+            st.error(f"Gagal memproses file CV: {e}")
+    else:
+        st.warning("Silakan unggah file CV terlebih dahulu.")
