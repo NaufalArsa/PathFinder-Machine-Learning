@@ -12,7 +12,7 @@ except Exception as e:
     raise
 
 # Load the dataset used to train TF-IDF
-df_ready = pd.read_csv("job_reference_data.csv")
+df_ready = pd.read_csv("Data/job_reference_data.csv")
 
 def preprocess_data(df_clean):
     """Vectorize resume data using the pre-trained TF-IDF model."""
@@ -23,7 +23,7 @@ def preprocess_data(df_clean):
         print(f"❌ Error during vectorization: {e}")
         raise
 
-def predict(df_clean, output_csv="predictions.csv", top_n=5):
+def predict(df_clean, output_csv="Data/resume_output.csv", top_n=5):
     """Find top N job recommendations based on resume similarity."""
     try:
         new_tfidf = preprocess_data(df_clean)
@@ -38,11 +38,18 @@ def predict(df_clean, output_csv="predictions.csv", top_n=5):
                     matched_title = df_ready.iloc[idx]["title"]  # Retrieve job title from original dataset
                 else:
                     matched_title = "Unknown"
+                
+                similarity = sims[idx] * 100
+                similarity_score = round(similarity, 2)
+
+                # Ensure minimum score threshold (e.g., avoid showing "0.0%" if near zero)
+                if similarity_score < 1:
+                    similarity_score = "<1%"  # Handle extremely low scores gracefully
 
                 results.append({
                     "cv_index": i + 1,
                     "recommended_job_title": matched_title,
-                    "similarity_score": round(sims[idx] * 100, 2)  # Convert to percentage
+                    "similarity_score": f"{similarity_score}%"
                 })
 
         df_results = pd.DataFrame(results)
