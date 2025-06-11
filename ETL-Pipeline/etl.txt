@@ -1,8 +1,12 @@
-#Run Flask API
-python main.py
+
+#Get requirements
+pip install -r requirements.txt
 
 #Download English Package for Spacy in Env
 python -m spacy download en_core_web_sm
+
+#Run Flask API
+python main.py
 
 #URL Connect to Flask API
 http://127.0.0.1:5000/process-resume
@@ -21,3 +25,4 @@ python==3.10.18
         "recommended_job_title": "Python/Data Visualization Developer, Internship",
         "similarity_score": "67.12%"
 }
+
