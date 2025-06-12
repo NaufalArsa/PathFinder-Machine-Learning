@@ -53,27 +53,19 @@ def detect_language(text: str) -> None:
         raise ValueError(f"Error detecting language: {e}")
 
 def extract_text(input_data: Union[str, Path]) -> str:
-    """Extracts text dynamically from a file or direct string input."""
     try:
-        if isinstance(input_data, str):
-            cleaned_text = clean_text(input_data)
-            detect_language(cleaned_text) # <- Delete if Error
-            return cleaned_text
-
         path = Path(input_data)
-        if not path.exists():
-            raise FileNotFoundError(f"Error: File '{path}' not found.")
+        if path.exists():
+            if path.suffix.lower() == ".pdf":
+                extracted = extract_text_from_pdf(path)
+            # elif path.suffix.lower() in [".jpg", ".jpeg", ".png", ".tiff"]:
+            #     extracted = extract_text_via_ocr(path)
+            else:
+                raise ValueError(f"Unsupported file format: {path.suffix}")
+            return clean_text(extracted)
 
-        if path.suffix.lower() == ".pdf":
-            extracted_text = extract_text_from_pdf(path)
-        elif path.suffix.lower() in [".png", ".jpg", ".jpeg", ".tiff"]:
-            extracted_text = extract_text_via_ocr(path)
-        else:
-            raise ValueError(f"⚠️ Unsupported file format: {path.suffix}")
-
-        cleaned_text = clean_text(extracted_text)
-        detect_language(cleaned_text)  # Validate language
-        return cleaned_text
+        # If it's not a file, assume it's raw resume string
+        return clean_text(str(input_data))
 
     except Exception as e:
         raise RuntimeError(f"Error extracting text: {e}")
@@ -83,15 +75,23 @@ def extract_text(input_data: Union[str, Path]) -> str:
 def extract_text_from_pdf(pdf_path: Union[str, Path]) -> str:
     """Extract text from a PDF using pdfplumber, fallback to OCR if necessary."""
     try:
-        text = ""
+        text_blocks = []
         with pdfplumber.open(str(pdf_path)) as pdf:
             for page in pdf.pages:
                 extracted = page.extract_text()
-                text += extracted + "\n" if extracted else ""
+                if extracted:
+                    text_blocks.append(extracted)
 
-        return text.strip() if text else extract_text_via_ocr(pdf_path)
+        if not text_blocks:
+            return extract_text_via_ocr(pdf_path)
+
+        full_text = "\n".join(text_blocks)
+        detect_language(full_text)  # Raise error if not English
+        return full_text.strip()
+
     except Exception as e:
         raise RuntimeError(f"Error extracting text from PDF: {e}")
+
 
 
 def extract_text_via_ocr(image_path: Union[str, Path]) -> str:
@@ -236,13 +236,25 @@ def calculate_months(start: str, end: str) -> int:
         return max(0, (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month))
     except:
         return 0
+    
+def preprocess_lines(text: str) -> list:
+    """Improves structure detection by reconstructing logical lines from raw text."""
+    try:
+        # Normalize bullet points and random indents
+        text = re.sub(r'[\u2022•·◦●►]', '\n', text)
+        text = re.sub(r'(?<=[a-z])\s{2,}(?=[A-Z])', '\n', text)  # Break lines between lower and upper case
+        text = re.sub(r'\n{2,}', '\n', text)
+        return [line.strip() for line in text.splitlines() if line.strip()]
+    except Exception as e:
+        raise RuntimeError(f"Error preprocessing lines: {e}")
+
 
 
 def extract_resume_features(input_data: Union[str, Path]) -> dict:
     """Extracts structured details from a resume, accepting either a file or raw string."""
     try:
         text = extract_text(input_data)
-        lines = text.split("\n")
+        lines = preprocess_lines(text)
 
         return {
             "ID": str(uuid.uuid4()),
