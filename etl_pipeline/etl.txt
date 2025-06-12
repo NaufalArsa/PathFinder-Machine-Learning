@@ -1,0 +1,53 @@
+
+#Get requirements
+pip install -r requirements.txt
+
+#Download English Package for Spacy in Env
+python -m spacy download en_core_web_sm
+
+#Run Flask API
+python main.py
+
+#URL Connect to Flask API (Process-Resume)
+http://127.0.0.1:5000/process-resume
+
+#URL Connect to Flask API (Review-Resume)
+http://127.0.0.1:5000/review
+
+#Python Version
+python==3.10.18
+
+#Expected Input (Example:JSON) -> /process-resume
+{
+    "file": cv.pdf
+}
+
+#Expected Output (Example:JSON) -> /process-resume
+{
+        "cv_index": 1,
+        "recommended_job_title": "Python/Data Visualization Developer, Internship",
+        "similarity_score": "67.12%"
+}
+
+
+#Expected Input (Example:JSON) -> /review
+{
+    "file": cv.pdf
+}
+
+#Expected Output (Example:JSON) -> /review
+
+    "review": {
+        "strengths": [
+            "Diverse technical exposure: Combines UX/UI design skills (Miro, Adobe, Photoshop) with backend development knowledge (Laravel, Database Systems)",
+            "Relevant academic foundation: Coursework in UX Design, Database Systems, Programming, and Data Analytics aligns with technical roles",
+        ],
+        "suggestions": [
+            "Resolve timeline conflicts: Clarify dates for overlapping roles (e.g., part-time vs. full-time) and remove duplicate entries",
+            "Expand technical projects: Showcase portfolio pieces demonstrating Laravel/database implementations and UX solutions",
+        ],
+        "weaknesses": [
+            "Conflicting/overlapping timelines: UI/UX Intern and Data Management Intern both listed for Feb-May 2025 creates chronological ambiguity",
+            "Vague skill descriptions: Terms like 'system', 'management', and 'framework' lack context and specificity",
+        ]
+    }
