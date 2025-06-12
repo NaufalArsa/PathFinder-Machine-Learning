@@ -96,5 +96,5 @@ def review_profile():
     except Exception as e:
         return jsonify({"error": f"Review process failed: {e}"}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
