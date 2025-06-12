@@ -4,6 +4,8 @@ import pandas as pd
 from extract import extract_resume_features
 from predict import predict
 
+from feedback import feedback
+
 app = Flask(__name__)
 
 @app.route('/process-resume', methods=['POST'])
@@ -50,6 +52,28 @@ def process_resume():
     except Exception as e:
         return jsonify({"error": f"Unexpected server error: {e}"}), 500
 
+@app.route('/review', methods=['POST'])
+def review_profile():
+    try:
+        data = request.get_json()
+        if not data or "resume" not in data:
+            return jsonify({"error": "No resume text provided"}), 400
+
+        resume_text = data.get("resume")
+        if not isinstance(resume_text, str) or not resume_text.strip():
+            return jsonify({"error": "Invalid resume format"}), 400
+
+        extracted = extract_resume_features(resume_text)
+        if not extracted:
+            return jsonify({"error": "Failed to extract resume features"}), 500
+
+        df = pd.DataFrame([extracted])
+
+        review = feedback(df.iloc[0])
+        return jsonify({"review": review})
+
+    except Exception as e:
+        return jsonify({"error": f"Review process failed: {e}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
