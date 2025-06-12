@@ -23,7 +23,7 @@ def preprocess_data(df_clean):
         print(f"❌ Error during vectorization: {e}")
         raise
 
-def predict(df_clean, output_csv="Data/resume_output.csv", top_n=5):
+def predict(df_clean, output_csv="Data/resume_output.csv", top_n=3):
     """Find top N job recommendations based on resume similarity."""
     try:
         new_tfidf = preprocess_data(df_clean)

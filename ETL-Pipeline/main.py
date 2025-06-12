@@ -1,5 +1,7 @@
+import os
 from flask import Flask, request, jsonify
 import pandas as pd
+import json
 
 from extract import extract_resume_features
 from predict import predict
@@ -8,69 +10,88 @@ from feedback import feedback
 
 app = Flask(__name__)
 
+UPLOAD_FOLDER = 'uploads'
+
+ALLOWED_EXTENSIONS = {'pdf'}
+
+# Ensure upload folder exists
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/process-resume', methods=['POST'])
 def process_resume():
     try:
-        extracted_data = []
-        df_result = pd.DataFrame()
+        if 'file' not in request.files:
+            return jsonify({"error": "No file part in request"}), 400
 
-        # Retrieve resume string from JSON
-        data = request.get_json()
-        if not data or "resume" not in data:
-            return jsonify({"error": "No resume text provided"}), 400
+        file = request.files['file']
 
-        resume_text = data.get("resume")
-        if not isinstance(resume_text, str) or not resume_text.strip():
-            return jsonify({"error": "Invalid resume format"}), 400
+        if file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
 
-        # Extract resume features
-        try:
-            extracted = extract_resume_features(resume_text)
-            if not extracted:
-                return jsonify({"error": "Failed to extract resume features"}), 500
-        except Exception as e:
-            return jsonify({"error": f"Resume extraction error: {e}"}), 500
+        if not allowed_file(file.filename):
+            return jsonify({"error": "Unsupported file type. Only .pdf accepted"}), 400
 
-        extracted_data.append(extracted)
+        # Save the uploaded file to ./uploads/
+        save_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(save_path)
 
-        # Convert extracted data to DataFrame
-        try:
-            df_extract = pd.DataFrame(extracted_data)
-            print(df_extract.head())
-        except Exception as e:
-            return jsonify({"error": f"Error converting extracted data to DataFrame: {e}"}), 500
+        # Extract and predict
+        extracted = extract_resume_features(save_path)
+        df_extract = pd.DataFrame([extracted])
+        df_result = pd.DataFrame(predict(df_extract))
 
-        # Predict job recommendations
-        try:
-            df_result = pd.DataFrame(predict(df_extract))
-        except Exception as e:
-            return jsonify({"error": f"Prediction process failed: {e}"}), 500
+        # Delete all files in the upload folder
+        for f in os.listdir(UPLOAD_FOLDER):
+            file_path = os.path.join(UPLOAD_FOLDER, f)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
 
-        # Return JSON results
         return jsonify(df_result.to_dict(orient="records"))
 
     except Exception as e:
         return jsonify({"error": f"Unexpected server error: {e}"}), 500
+    
 
 @app.route('/review', methods=['POST'])
 def review_profile():
     try:
-        data = request.get_json()
-        if not data or "resume" not in data:
-            return jsonify({"error": "No resume text provided"}), 400
+        print("DEBUG: Request received")
+        
+        if 'file' not in request.files:
+            return jsonify({"error": "No file part in request"}), 400
 
-        resume_text = data.get("resume")
-        if not isinstance(resume_text, str) or not resume_text.strip():
-            return jsonify({"error": "Invalid resume format"}), 400
+        file = request.files['file']
 
-        extracted = extract_resume_features(resume_text)
-        if not extracted:
-            return jsonify({"error": "Failed to extract resume features"}), 500
+        if file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
 
+        if not allowed_file(file.filename):
+            return jsonify({"error": "Unsupported file type. Only .pdf accepted"}), 400
+
+        # Save the uploaded file to ./uploads/
+        save_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(save_path)
+
+        # Extract and predict
+        extracted = extract_resume_features(save_path)
         df = pd.DataFrame([extracted])
 
-        review = feedback(df.iloc[0])
-        return jsonify({"review": review})
+        print("DEBUG: Extraction result", df.to_dict())
+
+        result = feedback(df.iloc[0])
+        print("DEBUG: Type of feedback return", type(result))
+
+        # Delete all files in the upload folder
+        for f in os.listdir(UPLOAD_FOLDER):
+            file_path = os.path.join(UPLOAD_FOLDER, f)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+
+        return result
+        
 
     except Exception as e:
         return jsonify({"error": f"Review process failed: {e}"}), 500
