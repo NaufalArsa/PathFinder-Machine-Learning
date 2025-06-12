@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 import pandas as pd
 
-from extract import extract_resume_features
-from predict import predict
+from etl_pipeline.extract import extract_resume_features
+from etl_pipeline.predict import predict
 
 app = Flask(__name__)
 
