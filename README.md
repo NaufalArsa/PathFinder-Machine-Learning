@@ -1,12 +1,13 @@
 # Resume Analysis & Job Recommendation API
 
-This project is an end-to-end ETL pipeline and Flask API for analyzing resumes, extracting key features, and providing job recommendations and professional CV reviews using AI. It leverages NLP, machine learning, and LLMs to deliver actionable insights for job seekers and recruiters.
+This project provides an end-to-end ETL pipeline and Flask API for analyzing resumes, extracting key features, and recommending jobs using AI. The main job recommendation engine uses **cosine similarity** with TF-IDF vectorization, while an **LSTM model** is included for experimentation and learning purposes.
 
 ## Features
 
 - **Resume Parsing:** Extracts skills, experience, education, and abilities from PDF resumes.
-- **Job Recommendation:** Suggests the most relevant job titles based on resume content using a TF-IDF model.
+- **Job Recommendation:** Suggests the most relevant job titles based on resume content using cosine similarity (TF-IDF).
 - **CV Review:** Generates a professional, AI-powered review of the resume, highlighting strengths, weaknesses, and suggestions.
+- **LSTM Model (Experimental):** An LSTM-based model is included for research and learning, but is not used in production recommendations.
 - **REST API:** Easy-to-use endpoints for integration with other systems or frontends.
 
 ## Project Structure
@@ -19,6 +20,8 @@ This project is an end-to-end ETL pipeline and Flask API for analyzing resumes, 
 │   ├── predict.py
 │   ├── feedback.py
 │   └── etl.txt
+├── lstm/                    # LSTM model (experimental)
+│   ├── app.py
 ├── dataset/                 # Sample datasets and reference data
 ├── models/                  # Pre-trained ML models
 ├── uploads/                 # Temporary storage for uploaded resumes
@@ -28,25 +31,20 @@ This project is an end-to-end ETL pipeline and Flask API for analyzing resumes, 
 
 ## Quickstart: How to Run
 
-Follow these steps to set up and run the API locally:
+1. **Install Python Requirements**
+    ```sh
+    pip install -r requirements.txt
+    ```
 
-### 1. Install Python Requirements
+2. **Download the English Model for spaCy**
+    ```sh
+    python -m spacy download en_core_web_sm
+    ```
 
-```sh
-pip install -r requirements.txt
-```
-
-### 2. Download the English Model for spaCy
-
-```sh
-python -m spacy download en_core_web_sm
-```
-
-### 3. Run the Flask API
-
-```sh
-python main.py
-```
+3. **Run the Flask API**
+    ```sh
+    python main.py
+    ```
 
 The API will be available at [http://127.0.0.1:5000](http://127.0.0.1:5000).
 
@@ -104,6 +102,13 @@ The API will be available at [http://127.0.0.1:5000](http://127.0.0.1:5000).
     ]
 }
 ```
+
+---
+
+## Model Notes
+
+- **Cosine Similarity (TF-IDF):** Used as the main method for job recommendation due to its effectiveness and interpretability.
+- **LSTM Model:** Included for learning and experimentation. Not used in the main API workflow, but can be explored in `LSTM` folder.
 
 ---
 
