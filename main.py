@@ -96,5 +96,61 @@ def review_profile():
     except Exception as e:
         return jsonify({"error": f"Review process failed: {e}"}), 500
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for monitoring"""
+    return jsonify({
+        "status": "healthy",
+        "service": "PathFinder ML API",
+        "version": "1.0.0"
+    })
+
+@app.route('/debug-extract', methods=['POST'])
+def debug_extract():
+    """Debug endpoint to see extracted features"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file part in request"}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
+
+        if not allowed_file(file.filename):
+            return jsonify({"error": "Unsupported file type. Only .pdf accepted"}), 400
+
+        # Save the uploaded file to ./uploads/
+        save_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(save_path)
+
+        # Extract features
+        extracted = extract_resume_features(save_path)
+        
+        # Delete uploaded file
+        if os.path.exists(save_path):
+            os.remove(save_path)
+
+        return jsonify({
+            "extracted_features": extracted,
+            "missing_fields": {
+                "Experience": not extracted.get("Experience"),
+                "skill": not extracted.get("skill"), 
+                "ability": not extracted.get("ability"),
+                "program": not extracted.get("program")
+            }
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Debug extraction failed: {e}"}), 500
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": "Endpoint not found"}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({"error": "Internal server error"}), 500
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8081)
