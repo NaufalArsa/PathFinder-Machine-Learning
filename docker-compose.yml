@@ -1,0 +1,11 @@
+services:
+  pathfinder-api:
+    build: .
+    ports:
+      - "8000:5000"
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
+    volumes:
+      - ./models:/app/Model
+      - ./dataset:/app/Data 
