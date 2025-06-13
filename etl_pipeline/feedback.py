@@ -26,6 +26,29 @@ def feedback(df):
     if not all([experience, skills, ability, program]):
         return make_response(jsonify(error="Missing required parameters"), 400)
 
+    # Check if API key is available
+    if not OPENROUTER_API_KEY or OPENROUTER_API_KEY == "your_openrouter_api_key_here":
+        # Return a basic review without AI
+        basic_review = {
+            "strengths": [
+                f"Strong technical background with {experience}",
+                f"Proficient in {skills}",
+                f"Demonstrates {ability}",
+                f"Educational background: {program}"
+            ],
+            "weaknesses": [
+                "Consider adding more specific project achievements",
+                "Could benefit from more detailed metrics and KPIs"
+            ],
+            "suggestions": [
+                "Add quantifiable achievements to your experience",
+                "Include specific project outcomes and impact",
+                "Consider adding certifications relevant to your field",
+                "Highlight leadership and collaboration experiences"
+            ]
+        }
+        return make_response(jsonify(review=basic_review), 200)
+
     # Prompt format
     prompt = (
         f"Based on the following resume profile, write a professional technical CV review.\n\n"
